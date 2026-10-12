@@ -53,7 +53,7 @@ export function ScanPanel({ onAnalyze, compact = false }: ScanPanelProps) {
     setLoading(true)
     try {
       await onAnalyze({ content: value, type })
-      setNotice('Demo analysis complete. No network security checks were performed.')
+      setNotice('Demo heuristic analysis complete. No external threat-intelligence checks were performed.')
     } catch {
       setError('The demo analysis could not be completed. Please try again.')
     } finally {
@@ -65,7 +65,7 @@ export function ScanPanel({ onAnalyze, compact = false }: ScanPanelProps) {
 
   return (
     <section className={`scan-panel ${compact ? 'scan-panel-compact' : ''}`} aria-labelledby="scan-panel-title">
-      {!compact && <div className="panel-heading scan-panel-heading"><div><div className="eyebrow"><ScanLine size={14} /> START AN INVESTIGATION</div><h2 id="scan-panel-title">What would you like a second look at?</h2><p>Paste only the link or message you want to review. This demo stays in your browser.</p></div><span className="demo-chip">DEMO</span></div>}
+      {!compact && <div className="panel-heading scan-panel-heading"><div><div className="eyebrow"><ScanLine size={14} /> START AN INVESTIGATION</div><h2 id="scan-panel-title">What would you like a second look at?</h2><p>Submissions are saved to your account and assessed with deterministic demo rules.</p></div><span className="demo-chip">DEMO</span></div>}
       <div className="scan-tabs" role="tablist" aria-label="Content type">
         {scanTabs.map((tab) => {
           const Icon = tab.icon
@@ -76,7 +76,7 @@ export function ScanPanel({ onAnalyze, compact = false }: ScanPanelProps) {
         <div id="scan-input-panel" className="scan-input-wrap" role="tabpanel" aria-labelledby={`tab-${type}`}>
           <div className="input-toolbar"><label htmlFor="scan-input"><ActiveIcon size={15} /> {activeTab.inputLabel}</label><div className="input-actions"><button type="button" onClick={pasteContent} className="text-action"><Clipboard size={14} /> Paste</button><span className="toolbar-divider" /><button type="button" className="text-action muted-action" onClick={() => { setContent(''); setError(''); setNotice(''); textarea.current?.focus() }}><Eraser size={14} /> Clear</button></div></div>
           <textarea ref={textarea} id="scan-input" className={type === 'URL' || type === 'QR' ? 'mono-input' : ''} value={content} onChange={(event) => { setContent(event.target.value); setError(''); setNotice('') }} placeholder={activeTab.placeholder} rows={compact ? 4 : 5} maxLength={6000} aria-invalid={Boolean(error)} aria-describedby="scan-hint scan-counter scan-feedback" />
-          <div className="input-footer"><span id="scan-hint"><ShieldCheck size={13} /> Local demo. Nothing is sent to a server.</span><span id="scan-counter">{content.length.toLocaleString()} / 5,000 chars</span></div>
+          <div className="input-footer"><span id="scan-hint"><ShieldCheck size={13} /> Saved to your account. No destination is contacted.</span><span id="scan-counter">{content.length.toLocaleString()} / 5,000 chars</span></div>
         </div>
         <div className="scan-submit-row"><p>Results are illustrative and cannot establish whether content is safe.</p><button type="submit" className="button button-primary analyze-button" disabled={loading}>{loading ? <LoaderCircle className="spin" size={17} /> : <ScanLine size={17} />}{loading ? 'Analyzing…' : 'Analyze for threats'}</button></div>
         <div id="scan-feedback" aria-live="polite" className={`scan-feedback ${error ? 'error' : notice ? 'success' : ''}`}>{error && <><AlertCircle size={15} /> {error}</>}{notice && <><CheckCircle2 size={15} /> {notice}</>}</div>

@@ -44,7 +44,7 @@ export function ScanHistoryTable({ scans, onReport, search, onSearch, expanded =
         })}
       </tbody></table></div>
       {filtered.length === 0 && <div className="empty-state"><div className="empty-icon"><Search size={19} /></div><h3>No scans found</h3><p>{scans.length ? 'Try a different search or risk filter.' : 'Your session scan history will appear here.'}</p>{(search || riskFilter !== 'all') && <button className="button button-quiet" type="button" onClick={() => { onSearch(''); setRiskFilter('all') }}>Clear filters</button>}</div>}
-      <div className="table-foot"><span>{filtered.length} {filtered.length === 1 ? 'record' : 'records'} shown</span><span><span className="status-dot subdued" /> Demo data; session scans are not saved after closing this page.</span></div>
+      <div className="table-foot"><span>{filtered.length} {filtered.length === 1 ? 'record' : 'records'} shown</span><span><span className="status-dot subdued" /> Saved to your account; heuristic demo results are not live verification.</span></div>
     </section>
   )
 }

@@ -1,11 +1,15 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Activity, AlertTriangle, Bell, BookOpen, CheckCircle2, ChevronDown, CircleHelp, FileSearch, Globe2, LayoutDashboard, LockKeyhole, Menu, Moon, Search, Settings, Shield, ShieldAlert, ShieldCheck, Sun, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { Navigate, useLocation } from 'react-router-dom'
+import { AuthPage } from './components/AuthPage'
 import { ScanHistoryTable } from './components/ScanHistoryTable'
 import { ScanPanel } from './components/ScanPanel'
 import { ScanReport } from './components/ScanReport'
-import { demoScans, securityTips } from './data/demoData'
-import { analyzeDemo } from './services/scanService'
+import { AccountMenu } from './components/AccountMenu'
+import { securityTips } from './data/demoData'
+import { api, type DashboardSummary } from './services/apiClient'
+import { useAuth } from './services/useAuth'
 import type { ScanInput, ScanRecord } from './types'
 
 type PageId = 'overview' | 'new-scan' | 'history' | 'intelligence' | 'tips' | 'settings'
@@ -48,9 +52,10 @@ function PageHeading({ eyebrow, title, description, action }: { eyebrow: string;
   return <div className="page-heading"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{description}</p></div>{action}</div>
 }
 
-function App() {
+function DashboardApp() {
   const [page, setPage] = useState<PageId>('overview')
-  const [scans, setScans] = useState<ScanRecord[]>(demoScans)
+  const [scans, setScans] = useState<ScanRecord[]>([])
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [report, setReport] = useState<ScanRecord | null>(null)
   const [historyQuery, setHistoryQuery] = useState('')
   const [tipsQuery, setTipsQuery] = useState('')
@@ -60,12 +65,25 @@ function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('light')
   const [preferences, setPreferences] = useState({ threatAlerts: true, weeklyDigest: false, sessionHistory: true })
 
+  useEffect(() => {
+    let active = true
+    Promise.all([api.history(), api.summary()]).then(([history, dashboard]) => {
+      if (!active) return
+      setScans(history)
+      setSummary(dashboard)
+    }).catch(() => {
+      if (active) setSummary({ scanCount: 0, lowCount: 0, mediumCount: 0, highCount: 0, recentActivity: [] })
+    })
+    return () => { active = false }
+  }, [])
+
   const filteredTips = useMemo(() => securityTips.filter((tip) => `${tip.category} ${tip.title} ${tip.text}`.toLowerCase().includes(tipsQuery.toLowerCase())), [tipsQuery])
 
   async function runAnalysis(input: ScanInput) {
-    const result = await analyzeDemo(input)
-    if (preferences.sessionHistory) setScans((current) => [result, ...current])
+    const result = await api.createScan(input)
+    setScans((current) => [result, ...current.filter((scan) => scan.id !== result.id)])
     setReport(result)
+    void api.summary().then(setSummary).catch(() => undefined)
   }
 
   function navigate(nextPage: PageId) {
@@ -83,7 +101,6 @@ function App() {
   function togglePreference(name: keyof typeof preferences) {
     const nextValue = !preferences[name]
     setPreferences((current) => ({ ...current, [name]: nextValue }))
-    if (name === 'sessionHistory' && !nextValue) setScans(demoScans)
   }
 
   const pageContent = (() => {
@@ -113,6 +130,7 @@ function App() {
   })()
 
   return <div className="app-shell" data-theme={theme}>
+    <AccountMenu summary={summary} />
     {mobileNavOpen && <button className="drawer-scrim" aria-label="Close navigation" type="button" onClick={() => setMobileNavOpen(false)} />}
     <aside className={`sidebar ${mobileNavOpen ? 'sidebar-open' : ''}`} aria-label="Main navigation"><div><button className="brand" type="button" onClick={() => navigate('overview')}><span className="brand-mark"><Shield size={19} /></span><span className="brand-copy"><strong>ScamShield</strong><small>THREAT DEFENSE</small></span></button><div className="side-label">WORKSPACE</div><nav className="side-nav">{navigation.map((item) => {
       const Icon = item.icon
@@ -125,4 +143,11 @@ function App() {
   </div>
 }
 
-export default App
+export default function App() {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+  if (loading) return <div className="auth-loading" role="status">Checking your secure session…</div>
+  if (!user) return <AuthPage />
+  if (location.pathname !== '/') return <Navigate to="/" replace />
+  return <DashboardApp />
+}
